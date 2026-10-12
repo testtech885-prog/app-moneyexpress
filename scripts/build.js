@@ -42,7 +42,7 @@ copyFileSync(
 );
 
 writeFileSync(resolve(dist, "_redirects"), [
-  "/api/* /.netlify/functions/api/:splat 200!",
+  "/api/* https://app-moneyexpress-1.onrender.com/api/:splat 200!",
   "/* /index.html 200",
   "",
 ].join("\n"), "utf8");

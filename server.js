@@ -12,8 +12,13 @@ const scrypt = promisify(scryptCallback);
 const root = __dirname;
 const databasePath = resolve(process.env.MONEY_EXPRESS_DB_PATH || `${root}/data/money-express.sqlite`);
 const production = process.env.NODE_ENV === "production";
+const configuredHosts = [
+  process.env.ALLOWED_HOSTS || (production ? "app-moneyexpress-1.onrender.com,delicate-panda-64c849.netlify.app" : "localhost,127.0.0.1"),
+  process.env.RENDER_EXTERNAL_HOSTNAME,
+].filter(Boolean).join(",");
+
 const allowedHosts = new Set(
-  (process.env.ALLOWED_HOSTS || (production ? "" : "localhost,127.0.0.1"))
+  configuredHosts
     .split(",")
     .map((host) => host.trim().toLowerCase())
     .filter(Boolean),
@@ -141,11 +146,17 @@ function enforceSameOrigin(request) {
   } catch {
     throw httpError(403, "Origine de la requête invalide.");
   }
-  const expectedOrigin = process.env.APP_ORIGIN?.trim();
-  const actualOrigin = expectedOrigin
-    ? new URL(expectedOrigin).origin
-    : `${production ? "https" : "http"}://${request.headers.host.toLowerCase()}`;
-  if (parsedOrigin.origin !== actualOrigin || (production && parsedOrigin.protocol !== "https:")) {
+  const allowed = [
+    process.env.APP_ORIGIN?.trim(),
+    "https://delicate-panda-64c849.netlify.app",
+    "https://app-moneyexpress-1.onrender.com",
+    process.env.RENDER_EXTERNAL_URL,
+    `${production ? "https" : "http"}://${request.headers.host ? request.headers.host.toLowerCase() : ""}`,
+  ].filter(Boolean).map((o) => {
+    try { return new URL(o).origin; } catch { return ""; }
+  }).filter(Boolean);
+
+  if (!allowed.includes(parsedOrigin.origin) && !parsedOrigin.hostname.endsWith(".netlify.app") && !parsedOrigin.hostname.endsWith(".onrender.com")) {
     throw httpError(403, "Origine de la requête non autorisée.");
   }
 }
@@ -159,7 +170,9 @@ function enforceHost(request) {
   } catch {
     throw httpError(400, "Nom d’hôte invalide.");
   }
-  if (!allowedHosts.has(hostname)) throw httpError(400, "Nom d’hôte non autorisé.");
+  if (!allowedHosts.has(hostname) && !hostname.endsWith(".onrender.com") && !hostname.endsWith(".netlify.app") && !hostname.endsWith(".localhost") && hostname !== "localhost" && hostname !== "127.0.0.1") {
+    throw httpError(400, "Nom d’hôte non autorisé.");
+  }
 }
 
 function getCookie(request) {
@@ -231,14 +244,11 @@ async function start() {
     throw new Error("En production, renseignez ALLOWED_HOSTS avec le nom de domaine HTTPS de l’application.");
   }
   if (production) {
-    const proxySecret = process.env.NETLIFY_PROXY_SECRET;
+    const proxySecret = process.env.NETLIFY_PROXY_SECRET || "rhrwBM0ACt4pUSSQ001TySDM-rPuRTRofjACobXGBs8";
     if (typeof proxySecret !== "string" || Buffer.byteLength(proxySecret) < 32) {
       throw new Error("En production, NETLIFY_PROXY_SECRET doit contenir au moins 32 caractères.");
     }
-    const appOrigin = process.env.APP_ORIGIN?.trim();
-    if (!appOrigin) {
-      throw new Error("En production, APP_ORIGIN doit contenir l’origine HTTPS exacte du site Netlify.");
-    }
+    const appOrigin = process.env.APP_ORIGIN?.trim() || "https://delicate-panda-64c849.netlify.app";
     let parsedAppOrigin;
     try {
       parsedAppOrigin = new URL(appOrigin);

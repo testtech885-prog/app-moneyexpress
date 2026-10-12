@@ -18,9 +18,9 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: ALLOWED_HOSTS
-        value: money-express-mobile.onrender.com
+        value: app-moneyexpress-1.onrender.com,delicate-panda-64c849.netlify.app
       - key: APP_ORIGIN
-        value: https://money-express-mobile.onrender.com
+        value: https://delicate-panda-64c849.netlify.app
       - key: MONEY_EXPRESS_DB_PATH
         value: /var/data/money-express.sqlite
       - key: NETLIFY_PROXY_SECRET
