@@ -1,0 +1,15 @@
+{
+  "name": "money-express-mobile",
+  "version": "1.0.0",
+  "description": "Application web Money Express Mobile",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node server.js",
+    "dev": "node --env-file=.env server.js"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

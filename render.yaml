@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: money-express-mobile
+    runtime: node
+    plan: starter
+    buildCommand: node --check server.js
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    disk:
+      name: money-express-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: ALLOWED_HOSTS
+        value: money-express-mobile.onrender.com
+      - key: APP_ORIGIN
+        value: https://money-express-mobile.onrender.com
+      - key: MONEY_EXPRESS_DB_PATH
+        value: /var/data/money-express.sqlite
+      - key: NETLIFY_PROXY_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_NAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
