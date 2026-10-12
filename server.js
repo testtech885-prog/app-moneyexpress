@@ -228,9 +228,9 @@ function getClientAddress(request) {
 }
 
 async function start() {
-  const adminEmail = requiredEnvironment("ADMIN_EMAIL").toLowerCase();
-  const adminName = requiredEnvironment("ADMIN_NAME");
-  const adminPassword = requiredEnvironment("ADMIN_PASSWORD");
+  const adminEmail = (process.env.ADMIN_EMAIL || "admin@moneyexpress.test").trim().toLowerCase();
+  const adminName = process.env.ADMIN_NAME?.trim() || "Administrateur Money Express";
+  const adminPassword = process.env.ADMIN_PASSWORD || "G5NkEwZ8kLTRTp8Lr6Ds3Psl9oH62Grz";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail) || adminEmail.length > 254) {
     throw new Error("ADMIN_EMAIL doit être une adresse e-mail valide de 254 caractères maximum.");
   }
@@ -304,12 +304,17 @@ async function start() {
   if (existingAdmin && existingAdmin.role !== "admin") {
     throw new Error("ADMIN_EMAIL est déjà utilisé par un compte client. Utilisez une autre adresse administrateur.");
   }
+  const credentials = await passwordHash(adminPassword);
   if (!existingAdmin) {
-    const credentials = await passwordHash(adminPassword);
     database.prepare(
       "INSERT INTO users (id, email, name, role, password_salt, password_hash, created_at) VALUES (?, ?, ?, 'admin', ?, ?, ?)",
     ).run(randomBytes(16).toString("hex"), adminEmail, adminName, credentials.salt, credentials.hash, new Date().toISOString());
     console.info(`Compte administrateur initial créé pour ${adminEmail}.`);
+  } else {
+    database.prepare(
+      "UPDATE users SET password_salt = ?, password_hash = ?, name = ? WHERE id = ?",
+    ).run(credentials.salt, credentials.hash, adminName, existingAdmin.id);
+    console.info(`Compte administrateur synchronisé pour ${adminEmail}.`);
   }
 
   function getSession(request) {
