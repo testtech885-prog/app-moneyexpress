@@ -814,7 +814,16 @@
 
     try {
       const isWu = selectedService === "Western Union" || (form.elements["service"] && form.elements["service"].value === "Western Union");
-      const hasFileInput = Boolean(form.querySelector("input[type=file]"));
+      const fileInput = form.querySelector("input[type=file]");
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          formError.textContent = "Le fichier sélectionné est trop lourd (" + (file.size / (1024 * 1024)).toFixed(1) + " Mo). La taille maximale autorisée est de 5 Mo.";
+          submit.disabled = false;
+          return;
+        }
+      }
+      const hasFileInput = Boolean(fileInput);
 
       let createdRequest;
 
