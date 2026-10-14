@@ -412,7 +412,12 @@
   function setAuthMode(mode) {
     authMode = mode;
     const registration = mode === "register";
-    document.getElementById("auth-title").textContent = registration ? "Votre espace commence ici." : "Ravi de vous retrouver.";
+    const titleEl = document.getElementById("auth-title");
+    if (titleEl) {
+      titleEl.innerHTML = registration
+        ? "<span>Créer un compte client</span>"
+        : '<span class="official-logo-clean" aria-label="Money Express"><img src="/assets/money-express-logo.jpg" alt="Money Express" /></span>';
+    }
     document.getElementById("auth-description").textContent = registration
       ? "Créez votre compte client pour préparer et suivre vos demandes."
       : "Connectez-vous pour accéder à vos demandes et à vos services.";

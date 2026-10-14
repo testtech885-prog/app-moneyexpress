@@ -1,44 +1,61 @@
-.official-logo {
+.official-logo,
+.official-logo-clean {
   position: relative;
   display: block;
-  width: 140px;
-  height: 46px;
-  flex: 0 0 140px;
+  width: 154px;
+  height: 50px;
+  flex: 0 0 154px;
   overflow: hidden;
-  border-radius: 4px;
-  background: #fff;
+  border-radius: 0;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent !important;
 }
 
-.official-logo img {
+.official-logo img,
+.official-logo-clean img {
   position: absolute;
-  top: -49px;
-  left: -8px;
-  width: 154px;
+  top: -53px;
+  left: -9px;
+  width: 170px;
   max-width: none;
-  height: 154px;
+  height: 170px;
   object-fit: contain;
+  border: none;
+  outline: none;
+  background: transparent !important;
+  mix-blend-mode: multiply;
+}
+
+.auth-card h1 {
+  margin: 10px 0 6px;
+  display: flex;
+  align-items: center;
+}
+
+.auth-brand {
+  display: none !important;
 }
 
 .sidebar > .brand {
   margin: 0 0 38px;
 }
 
-.auth-brand {
-  align-self: start;
-}
-
 @media (max-width: 680px) {
-  .official-logo {
-    width: 136px;
-    height: 44px;
-    flex-basis: 136px;
+  .official-logo,
+  .official-logo-clean {
+    width: 140px;
+    height: 45px;
+    flex-basis: 140px;
   }
 
-  .official-logo img {
-    top: -47px;
-    width: 148px;
-    height: 148px;
-    left: -7px;
+  .official-logo img,
+  .official-logo-clean img {
+    top: -48px;
+    left: -8px;
+    width: 154px;
+    height: 154px;
   }
 
   .sidebar > .brand {
