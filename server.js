@@ -30,6 +30,7 @@ const sessionLifetime = 7 * 24 * 60 * 60;
 const passwordParameters = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 const requestStatuses = new Set(["pending", "processing", "completed", "rejected"]);
 const wuOperations = new Set(["envoi", "retrait"]);
+const mobileOperations = new Set(["envoi", "retrait"]);
 const wuSendTypes = new Set(["normal", "direct_to_bank"]);
 const agencies = ["Agence Massengo", "Agence Kinsoudi", "Agence Mfilou"];
 const serviceTypes = new Set([
@@ -575,6 +576,34 @@ async function start() {
 
       const supportedService = kind === "transfer" ? transferServices.has(service) : serviceTypes.has(service);
 
+      /* Mobile Money & Airtel Money special flow for Retrait or Envoi with Agency */
+      if ((service === "Mobile Money" || service === "Airtel Money") && kind === "transfer") {
+        const op = typeof body.wu_operation === "string" ? body.wu_operation : (typeof body.operation_type === "string" ? body.operation_type : "envoi");
+        if (op === "retrait") {
+          if (!agencies.includes(agency)) throw httpError(400, "Veuillez choisir une agence pour le retrait.");
+          if (recipient.length < 2 || recipient.length > 100) throw httpError(400, "Renseignez le nom du bénéficiaire.");
+          if (phone.length < 5 || phone.length > 32) throw httpError(400, "Renseignez le numéro de compte mobile.");
+          if (!Number.isSafeInteger(amount) || amount < 1) throw httpError(400, "Renseignez un montant valide.");
+          if (!new Set(["FCFA", "EUR", "USD"]).has(currency)) throw httpError(400, "Choisissez une devise.");
+          
+          const now = new Date().toISOString();
+          const prefix = service === "Mobile Money" ? "MM" : "AM";
+          const id = `${prefix}-${randomUUID().toUpperCase()}`;
+          database.prepare(`
+            INSERT INTO requests (id, user_id, kind, service, details, name, phone, amount, currency, recipient, wu_operation, agency, status, created_at, updated_at)
+            VALUES (?, ?, 'transfer', ?, ?, ?, ?, ?, ?, ?, 'retrait', ?, 'pending', ?, ?)
+          `).run(
+            id, user.id, service, details, name, phone, amount, currency, recipient, agency, now, now
+          );
+          database.prepare("INSERT INTO notifications (user_id, request_id, message, created_at) VALUES (?, ?, ?, ?)").run(
+            user.id, id, `Votre demande ${id} (${service} Retrait) a bien été envoyée.`, now
+          );
+          const created = database.prepare("SELECT * FROM requests WHERE id = ?").get(id);
+          sendJson(response, 201, { request: formatRequest(created) });
+          return;
+        }
+      }
+
       /* Western Union special flow */
       if (service === "Western Union" && kind === "transfer") {
         if (!wuOperations.has(wuOperation)) throw httpError(400, "Choisissez envoi ou retrait.");
@@ -709,6 +738,34 @@ async function start() {
       const user = requireUser(request);
       database.prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0").run(user.id);
       sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    /* Admin clients overview */
+    if (pathname === "/api/admin/users" && request.method === "GET") {
+      requireAdmin(request);
+      const clients = database.prepare(`
+        SELECT u.id, u.email, u.name, u.role, u.created_at,
+               COUNT(r.id) AS total_requests,
+               SUM(CASE WHEN r.status IN ('completed') THEN 1 ELSE 0 END) AS completed_requests,
+               SUM(CASE WHEN r.status IN ('pending', 'prepared', 'processing') THEN 1 ELSE 0 END) AS active_requests
+        FROM users u
+        LEFT JOIN requests r ON r.user_id = u.id
+        WHERE u.role = 'client'
+        GROUP BY u.id
+        ORDER BY u.created_at DESC
+      `).all();
+      sendJson(response, 200, {
+        clients: clients.map(c => ({
+          id: c.id,
+          email: c.email,
+          name: c.name,
+          createdAt: c.created_at,
+          totalRequests: Number(c.total_requests || 0),
+          completedRequests: Number(c.completed_requests || 0),
+          activeRequests: Number(c.active_requests || 0),
+        })),
+      });
       return;
     }
 

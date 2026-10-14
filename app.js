@@ -34,6 +34,7 @@
   let toastTimer;
   let notificationsPollTimer;
   let wuOperation = "envoi";
+  let mobileOperation = "envoi";
 
   const icons = {
     transfer: '<svg viewBox="0 0 24 24" fill="none"><path d="M7 7h13m0 0-4-4m4 4-4 4M17 17H4m0 0 4-4m-4 4 4 4"/></svg>',
@@ -165,6 +166,38 @@
     }
   });
 
+  
+  /* --- ADMIN CLIENTS OVERVIEW --- */
+  async function loadAdminClients() {
+    if (!currentUser || currentUser.role !== "admin") return;
+    const section = document.getElementById("admin-clients-section");
+    const countEl = document.getElementById("admin-clients-count");
+    const tbody = document.getElementById("admin-clients-tbody");
+    if (!section || !tbody) return;
+
+    try {
+      const { clients } = await api("/api/admin/users");
+      countEl.textContent = `${clients.length} client${clients.length > 1 ? "s" : ""}`;
+      if (!clients.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: #94a3b8;">Aucun client enregistré pour le moment.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = clients.map((c) => {
+        const dateStr = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short" }).format(new Date(c.createdAt));
+        return `<tr>
+          <td><strong>${escapeHTML(c.name)}</strong></td>
+          <td>${escapeHTML(c.email)}</td>
+          <td>${dateStr}</td>
+          <td><strong>${c.totalRequests}</strong></td>
+          <td>${c.activeRequests ? `<span class="badge-num badge-num-active">${c.activeRequests}</span>` : "0"}</td>
+          <td>${c.completedRequests ? `<span class="badge-num badge-num-completed">${c.completedRequests}</span>` : "0"}</td>
+        </tr>`;
+      }).join("");
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #ef4444;">Impossible de charger la liste : ${escapeHTML(err.message)}</td></tr>`;
+    }
+  }
+
   /* --- REQUEST DETAIL & TRACKING MODAL --- */
   async function openRequestDetail(requestId) {
     try {
@@ -209,7 +242,16 @@
       const [statusLabel, statusClass] = statuses[request.status] || statuses.pending;
 
       let specificDetailsHtml = "";
-      if (isWU) {
+      const isMobile = request.service === "Mobile Money" || request.service === "Airtel Money";
+      if (isMobile && request.wuOperation === "retrait") {
+        specificDetailsHtml = `
+          <div class="detail-item"><small>Service & Opération</small><strong>${escapeHTML(request.service)} · Retrait d'argent</strong></div>
+          <div class="detail-item"><small>Montant</small><strong>${escapeHTML(request.amount)} ${escapeHTML(request.currency || "FCFA")}</strong></div>
+          <div class="detail-item"><small>Bénéficiaire</small><strong>${escapeHTML(request.recipient)}</strong></div>
+          <div class="detail-item"><small>Numéro de compte mobile</small><strong>${escapeHTML(request.phone)}</strong></div>
+          <div class="detail-item"><small>Agence de retrait</small><strong>${escapeHTML(request.agency || "Non renseignée")}</strong></div>
+        `;
+      } else if (isWU) {
         if (isEnvoi) {
           const sendTypeLabel = request.sendType === "direct_to_bank" ? "Direct to Bank (Compte bancaire)" : "Envoi normal (Cash)";
           specificDetailsHtml = `
@@ -447,6 +489,8 @@
     if (dialog && dialog.open) dialog.close();
     if (detailDialog && detailDialog.open) detailDialog.close();
     if (passwordDialog && passwordDialog.open) passwordDialog.close();
+    const adminClientsSec = document.getElementById("admin-clients-section");
+    if (adminClientsSec) adminClientsSec.hidden = true;
     document.getElementById("requests-list").replaceChildren();
     document.getElementById("request-count").textContent = "0";
     document.getElementById("open-requests").textContent = "0";
@@ -470,6 +514,8 @@
     document.getElementById("welcome-heading").innerHTML = `Bonjour ${isAdmin ? "l’équipe " : ""}<span class="wave">👋</span>`;
     document.getElementById("requests-eyebrow").textContent = isAdmin ? "ESPACE ADMINISTRATEUR" : "VOTRE ESPACE CLIENT";
     document.getElementById("requests-heading").textContent = isAdmin ? "Suivi des demandes" : "Mes demandes";
+    const adminClientsSec = document.getElementById("admin-clients-section");
+    if (adminClientsSec) adminClientsSec.hidden = !isAdmin;
     document.getElementById("requests-description").textContent = isAdmin
       ? "Consultez le contenu détaillé des demandes clients et traitez-les."
       : "Suivez ici le traitement et les étapes de vos demandes.";
@@ -485,6 +531,7 @@
 
     renderRequests();
     loadNotifications();
+    if (isAdmin) loadAdminClients();
 
     if (notificationsPollTimer) clearInterval(notificationsPollTimer);
     notificationsPollTimer = setInterval(() => {
@@ -569,6 +616,55 @@
     </div>`;
   }
 
+    /* --- MOBILE MONEY & AIRTEL MONEY FIELDS RENDERER --- */
+  function renderMobileFields(serviceName) {
+    const isEnvoi = mobileOperation === "envoi";
+    const agencyOptions = ["Agence Massengo", "Agence Kinsoudi", "Agence Mfilou"];
+
+    const switcher = `
+      <div class="field-full" style="margin-bottom: 12px;">
+        <label style="display:block; font-size:12px; font-weight:600; color:#94a3b8; margin-bottom:6px;">TYPE D'OPÉRATION ${escapeHTML(serviceName).toUpperCase()}</label>
+        <div class="wu-type-selector">
+          <button type="button" class="wu-type-btn ${isEnvoi ? "active" : ""}" data-mobile-toggle="envoi">
+            📤 Envoi / Dépôt
+          </button>
+          <button type="button" class="wu-type-btn ${!isEnvoi ? "active" : ""}" data-mobile-toggle="retrait">
+            📥 Retrait en agence
+          </button>
+        </div>
+        <input type="hidden" name="service" value="${escapeHTML(serviceName)}" />
+        <input type="hidden" name="wu_operation" value="${mobileOperation}" />
+      </div>
+    `;
+
+    let specificFields = "";
+    if (isEnvoi) {
+      specificFields = [
+        field({ name: "amount", label: "Montant indicatif", type: "number", placeholder: "Ex. 50 000", min: "1" }),
+        field({ name: "currency", label: "Devise", type: "select", options: ["FCFA", "EUR", "USD"], value: "FCFA" }),
+        field({ name: "recipient", label: "Nom du destinataire", placeholder: "Nom complet" }),
+        field({ name: "phone", label: "Numéro de téléphone destinataire", type: "tel", placeholder: "Ex. 06 XXX XX XX", full: true, hint: "Numéro de compte destinataire." }),
+      ].join("");
+    } else {
+      specificFields = [
+        field({ name: "recipient", label: "Nom complet du bénéficiaire", placeholder: "Votre nom complet", full: true }),
+        field({ name: "phone", label: "Numéro de compte ${serviceName}", type: "tel", placeholder: "Ex. 06 XXX XX XX", full: true, hint: "Numéro à débiter ou associé au compte." }),
+        field({ name: "amount", label: "Montant à retirer", type: "number", placeholder: "Ex. 25 000", min: "1" }),
+        field({ name: "currency", label: "Devise", type: "select", options: ["FCFA", "EUR", "USD"], value: "FCFA" }),
+        field({ name: "agency", label: "Agence de retrait souhaitée", type: "select", options: agencyOptions, value: "Agence Massengo", full: true }),
+      ].join("");
+    }
+
+    fieldsContainer.innerHTML = switcher + specificFields;
+
+    fieldsContainer.querySelectorAll("[data-mobile-toggle]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        mobileOperation = btn.dataset.mobileToggle;
+        renderMobileFields(serviceName);
+      });
+    });
+  }
+
   /* --- WESTERN UNION FIELDS RENDERER --- */
   function renderWuFields() {
     const isEnvoi = wuOperation === "envoi";
@@ -641,6 +737,8 @@
 
       if (selectedService === "Western Union") {
         renderWuFields();
+      } else if (selectedService === "Mobile Money" || selectedService === "Airtel Money") {
+        renderMobileFields(selectedService);
       } else {
         const transferOptions = ["Western Union", "Express Union", "Mobile Money", "Airtel Money"];
         fieldsContainer.innerHTML = [
@@ -657,6 +755,9 @@
             if (serviceSelect.value === "Western Union") {
               selectedService = "Western Union";
               renderWuFields();
+            } else if (serviceSelect.value === "Mobile Money" || serviceSelect.value === "Airtel Money") {
+              selectedService = serviceSelect.value;
+              renderMobileFields(selectedService);
             }
           });
         }

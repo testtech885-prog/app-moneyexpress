@@ -3,7 +3,7 @@
 const { createHmac } = require("node:crypto");
 const { isIP } = require("node:net");
 
-const API_PATH = /^\/api\/(?:health|auth\/(?:session|register|login|logout|password)|requests(?:\/[A-Za-z0-9-]+\/status)?)$/;
+const API_PATH = /^\/api\/(?:health|auth\/(?:session|register|login|logout|password)|requests(?:\/[A-Za-z0-9-]+(?:\/status)?)?|notifications(?:\/read)?|admin\/users|uploads\/[a-f0-9]+\.[a-z]+)$/;
 const FORWARDED_HEADERS = ["accept", "content-type", "cookie", "origin"];
 const RETURNED_HEADERS = ["cache-control", "content-type", "retry-after"];
 const MAX_BODY_SIZE = 16_384;
