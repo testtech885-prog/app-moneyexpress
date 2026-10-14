@@ -63,6 +63,21 @@
       <header class="topbar">
         <div class="breadcrumb"><span>Espace client</span><span class="breadcrumb-divider">/</span><strong>Tableau de bord</strong></div>
         <div class="topbar-actions">
+          <div class="notifications-wrapper" id="notifications-wrapper">
+            <button class="icon-button notifications-btn" id="notifications-btn" type="button" aria-label="Notifications" title="Notifications">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="notification-badge" id="notification-badge" hidden>0</span>
+            </button>
+            <div class="notifications-dropdown" id="notifications-dropdown" hidden>
+              <div class="notifications-header">
+                <strong>Notifications</strong>
+                <button type="button" id="mark-notifications-read" class="text-button">Tout marquer comme lu</button>
+              </div>
+              <div class="notifications-list" id="notifications-list">
+                <div class="notification-empty">Aucune notification</div>
+              </div>
+            </div>
+          </div>
           <button class="icon-button support-action" type="button" aria-label="Contacter l’équipe"><svg viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg></button>
           <span class="topbar-separator" aria-hidden="true"></span>
           <div class="profile"><span class="profile-avatar" id="profile-avatar" aria-hidden="true">M</span><div class="profile-copy"><strong id="profile-name">Mon espace</strong><span id="profile-role">Client Money Express</span></div><button class="logout-button" id="change-password-button" type="button">Mot de passe</button><button class="logout-button" id="logout-button" type="button">Déconnexion</button></div>
@@ -90,14 +105,94 @@
         <section class="content-section service-section" id="services">
           <div class="section-heading"><div><span class="eyebrow">À PORTÉE DE MAIN</span><h2>Tous nos services</h2><p>Le service qu’il vous faut, en un seul endroit.</p></div><button class="subtle-button" type="button" data-scroll-services>Tout explorer <span aria-hidden="true">→</span></button></div>
           <div class="services-grid">
-            <button class="service-card" type="button" data-service="Mobile Money"><span class="service-icon service-mobile">M</span><span class="service-text"><strong>Mobile Money</strong><small>Transferts &amp; dépôts</small></span><span class="service-arrow" aria-hidden="true">↗</span></button>
-            <button class="service-card" type="button" data-service="Airtel Money"><span class="service-icon service-airtel">A</span><span class="service-text"><strong>Airtel Money</strong><small>Paiements &amp; envois</small></span><span class="service-arrow" aria-hidden="true">↗</span></button>
-            <button class="service-card" type="button" data-service="Western Union"><span class="service-icon service-western">W</span><span class="service-text"><strong>Western Union</strong><small>Transfert international</small></span><span class="service-arrow" aria-hidden="true">↗</span></button>
-            <button class="service-card" type="button" data-service="Express Union"><span class="service-icon service-union">E</span><span class="service-text"><strong>Express Union</strong><small>Transfert d’argent</small></span><span class="service-arrow" aria-hidden="true">↗</span></button>
-            <button class="service-card" type="button" data-service="Canal+"><span class="service-icon service-canal">C<span>+</span></span><span class="service-text"><strong>Canal+ &amp; CanalBox</strong><small>Abonnements &amp; factures</small></span><span class="service-arrow" aria-hidden="true">↗</span></button>
-            <button class="service-card" type="button" data-service="Billet d’avion"><span class="service-icon service-flight"><svg viewBox="0 0 24 24" fill="none"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg></span><span class="service-text"><strong>Billets d’avion</strong><small>Préparez votre voyage</small></span><span class="service-arrow" aria-hidden="true">↗</span></button>
-            <button class="service-card" type="button" data-service="Assurance automobile"><span class="service-icon service-auto"><svg viewBox="0 0 24 24" fill="none"><path d="m5 11 1.5-5h11l1.5 5M3 11h18v8h-2v-2H5v2H3v-8Zm2 4h2m10 0h2M8 11l1-3h6l1 3"/></svg></span><span class="service-text"><strong>Assurance auto</strong><small>Obtenez un devis</small></span><span class="service-arrow" aria-hidden="true">↗</span></button>
-            <button class="service-card" type="button" data-service="Offres NSIA"><span class="service-icon service-nsia">NSIA</span><span class="service-text"><strong>Offres NSIA</strong><small>Protégez l’essentiel</small></span><span class="service-arrow" aria-hidden="true">↗</span></button>
+            <button class="service-card" type="button" data-service="Mobile Money">
+              <span class="service-icon service-mobile" aria-label="Mobile Money">
+                <svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="36" rx="8" fill="#FFCC00"/>
+                  <ellipse cx="18" cy="18" rx="14" ry="9" fill="#003366"/>
+                  <text x="18" y="21.5" text-anchor="middle" fill="#FFFFFF" font-size="8" font-weight="900" font-family="'Arial Black', sans-serif" letter-spacing="-0.4">MoMo</text>
+                </svg>
+              </span>
+              <span class="service-text"><strong>Mobile Money</strong><small>Transferts &amp; dépôts</small></span>
+              <span class="service-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="service-card" type="button" data-service="Airtel Money">
+              <span class="service-icon service-airtel" aria-label="Airtel Money">
+                <svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="36" rx="8" fill="#E60000"/>
+                  <path d="M18 9c-4.97 0-9 4.03-9 9 0 3.2 1.67 6.01 4.2 7.6.53.33 1.22-.05 1.22-.67v-2.1c0-.44-.24-.85-.63-1.07-1.42-.81-2.39-2.34-2.39-4.1 0-2.65 2.15-4.8 4.8-4.8s4.8 2.15 4.8 4.8c0 1.25-.48 2.39-1.27 3.24-.34.37-.31.94.07 1.28l1.6 1.45c.4.36 1.02.32 1.37-.1 1.5-1.78 2.43-4.08 2.43-6.6 0-4.97-4.03-9-9-9z" fill="#FFFFFF"/>
+                  <circle cx="18" cy="18" r="2.2" fill="#FFFFFF"/>
+                </svg>
+              </span>
+              <span class="service-text"><strong>Airtel Money</strong><small>Paiements &amp; envois</small></span>
+              <span class="service-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="service-card" type="button" data-service="Western Union">
+              <span class="service-icon service-western" aria-label="Western Union">
+                <svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="36" rx="8" fill="#111111"/>
+                  <path d="M6 10h4.2l3.2 11.2L16.8 10h3.6l3.4 11.2L27 10h4.2l-5.2 16h-4.2L18.4 15.2 15 26h-4.2L6 10Z" fill="#FFDE00"/>
+                  <rect x="14" y="16.5" width="13" height="2.2" transform="rotate(-18 14 16.5)" fill="#111111"/>
+                </svg>
+              </span>
+              <span class="service-text"><strong>Western Union</strong><small>Transfert international</small></span>
+              <span class="service-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="service-card" type="button" data-service="Express Union">
+              <span class="service-icon service-union" aria-label="Express Union">
+                <svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="36" rx="8" fill="#002D62"/>
+                  <path d="M8 11h9v3.4h-5.6v2.6h4.8v3.2h-4.8v3.4h5.8V27H8V11z" fill="#ED1C24"/>
+                  <path d="M18.5 11h3.4v10.5c0 1.8 1 2.5 2.3 2.5s2.3-.7 2.3-2.5V11H30v10.3c0 3.8-2.3 5.7-5.8 5.7s-5.7-1.9-5.7-5.7V11z" fill="#FFFFFF"/>
+                </svg>
+              </span>
+              <span class="service-text"><strong>Express Union</strong><small>Transfert d’argent</small></span>
+              <span class="service-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="service-card" type="button" data-service="Canal+">
+              <span class="service-icon service-canal" aria-label="Canal+">
+                <svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="36" rx="8" fill="#0A0A0A"/>
+                  <text x="13" y="21.5" text-anchor="middle" fill="#FFFFFF" font-size="7.5" font-weight="900" font-family="'Arial Black', sans-serif" letter-spacing="-0.5">CANAL</text>
+                  <rect x="25" y="13.5" width="3.2" height="9" rx="0.5" fill="#FFFFFF"/>
+                  <rect x="22" y="16.4" width="9.2" height="3.2" rx="0.5" fill="#FFFFFF"/>
+                </svg>
+              </span>
+              <span class="service-text"><strong>Canal+ &amp; CanalBox</strong><small>Abonnements &amp; factures</small></span>
+              <span class="service-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="service-card" type="button" data-service="Billet d’avion">
+              <span class="service-icon service-flight" aria-label="Billets d'avion">
+                <svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="36" rx="8" fill="#0284C7"/>
+                  <path d="M18 8.5l2 7.5L28 19.5v2.2l-8-2.2v5l2.6 2v1.8l-4.6-1.2-4.6 1.2v-1.8l2.6-2v-5L8 21.7v-2.2l8-3.5L18 8.5z" fill="#FFFFFF"/>
+                </svg>
+              </span>
+              <span class="service-text"><strong>Billets d’avion</strong><small>Préparez votre voyage</small></span>
+              <span class="service-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="service-card" type="button" data-service="Assurance automobile">
+              <span class="service-icon service-auto" aria-label="Assurance auto">
+                <svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="36" rx="8" fill="#0F766E"/>
+                  <path d="M10 16.5l1.5-4h13l1.5 4M8.5 16.5h19v6.5h-2v-1.5h-15v1.5h-2v-6.5zm3 3.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4zm13 0a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z" fill="#FFFFFF"/>
+                </svg>
+              </span>
+              <span class="service-text"><strong>Assurance auto</strong><small>Obtenez un devis</small></span>
+              <span class="service-arrow" aria-hidden="true">↗</span>
+            </button>
+            <button class="service-card" type="button" data-service="Offres NSIA">
+              <span class="service-icon service-nsia" aria-label="Offres NSIA">
+                <svg viewBox="0 0 36 36" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="36" rx="8" fill="#0B2545"/>
+                  <path d="M18 8l7.5 7.5L18 23l-7.5-7.5L18 8z" fill="#C59B27"/>
+                  <path d="M18 11.5l4 4-4 4-4-4 4-4z" fill="#0B2545"/>
+                  <text x="18" y="30.5" text-anchor="middle" fill="#C59B27" font-size="6.5" font-weight="900" font-family="'Arial Black', sans-serif" letter-spacing="0.5">NSIA</text>
+                </svg>
+              </span>
+              <span class="service-text"><strong>Offres NSIA</strong><small>Protégez l’essentiel</small></span>
+              <span class="service-arrow" aria-hidden="true">↗</span>
+            </button>
           </div>
         </section>
 
@@ -134,6 +229,20 @@
 
     <dialog class="app-modal" id="app-modal" aria-labelledby="modal-title"><div class="modal-inner"><div class="modal-heading"><span class="modal-heading-icon" id="modal-icon" aria-hidden="true"></span><button class="modal-close" id="modal-close" type="button" aria-label="Fermer">×</button></div><h2 id="modal-title"></h2><p class="modal-description" id="modal-description"></p><form id="app-form"><div id="modal-fields" class="modal-fields"></div><div class="form-error" id="form-error" role="alert"></div><div class="modal-actions"><button class="button button-quiet" id="modal-cancel" type="button">Annuler</button><button class="button button-primary" id="modal-submit" type="submit">Continuer <span aria-hidden="true">→</span></button></div><p class="modal-footnote"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg>Seuls les comptes Money Express autorisés peuvent consulter ces informations.</p></form></div></dialog>
     <dialog class="app-modal" id="password-dialog" aria-labelledby="password-title"><div class="modal-inner"><div class="modal-heading"><span class="modal-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4m-5 5v2"/></svg></span><button class="modal-close" id="password-close" type="button" aria-label="Fermer">×</button></div><h2 id="password-title">Changer mon mot de passe</h2><p class="modal-description">Saisissez votre mot de passe actuel, puis choisissez un mot de passe unique d’au moins 12 caractères.</p><form id="password-form"><div class="password-fields"><div class="field-group field-full"><label for="current-password">Mot de passe actuel</label><input id="current-password" name="currentPassword" type="password" autocomplete="current-password" minlength="12" maxlength="128" required /></div><div class="field-group field-full"><label for="new-password">Nouveau mot de passe</label><input id="new-password" name="newPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /></div><div class="field-group field-full"><label for="confirm-password">Confirmer le nouveau mot de passe</label><input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required /></div></div><div class="form-error" id="password-error" role="alert"></div><div class="modal-actions"><button class="button button-quiet" id="password-cancel" type="button">Annuler</button><button class="button button-primary" id="password-submit" type="submit">Mettre à jour</button></div></form></div></dialog>
+    <dialog class="app-modal detail-modal" id="detail-modal" aria-labelledby="detail-modal-title">
+      <div class="modal-inner">
+        <div class="modal-heading">
+          <span class="modal-heading-icon" id="detail-modal-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3h8l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3Zm7 1v5h5M8 13h8m-8 4h8"/></svg></span>
+          <button class="modal-close" id="detail-modal-close" type="button" aria-label="Fermer">×</button>
+        </div>
+        <h2 id="detail-modal-title">Détails de la demande</h2>
+        <p class="modal-description" id="detail-modal-description">Suivi et récapitulatif complet de votre opération.</p>
+        <div id="detail-modal-content" class="detail-modal-content"></div>
+        <div class="modal-actions" id="detail-modal-actions">
+          <button class="button button-primary" id="detail-modal-ok" type="button">Fermer</button>
+        </div>
+      </div>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="app.js" defer></script>
   </body>

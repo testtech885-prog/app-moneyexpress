@@ -3,7 +3,7 @@
 const { createServer } = require("node:http");
 const { isIP } = require("node:net");
 const { createHmac, createHash, randomBytes, randomUUID, scrypt: scryptCallback, timingSafeEqual } = require("node:crypto");
-const { mkdirSync, readFileSync } = require("node:fs");
+const { mkdirSync, readFileSync, writeFileSync, existsSync } = require("node:fs");
 const { dirname, resolve } = require("node:path");
 const { promisify } = require("node:util");
 const { DatabaseSync } = require("node:sqlite");
@@ -11,6 +11,8 @@ const { DatabaseSync } = require("node:sqlite");
 const scrypt = promisify(scryptCallback);
 const root = __dirname;
 const databasePath = resolve(process.env.MONEY_EXPRESS_DB_PATH || `${root}/data/money-express.sqlite`);
+const uploadsPath = resolve(root, "uploads");
+mkdirSync(uploadsPath, { recursive: true });
 const production = process.env.NODE_ENV === "production";
 const configuredHosts = [
   process.env.ALLOWED_HOSTS || (production ? "app-moneyexpress-1.onrender.com,delicate-panda-64c849.netlify.app" : "localhost,127.0.0.1"),
@@ -27,6 +29,9 @@ const cookieName = production ? "__Host-moneyexpress_session" : "moneyexpress_se
 const sessionLifetime = 7 * 24 * 60 * 60;
 const passwordParameters = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 const requestStatuses = new Set(["pending", "processing", "completed", "rejected"]);
+const wuOperations = new Set(["envoi", "retrait"]);
+const wuSendTypes = new Set(["normal", "direct_to_bank"]);
+const agencies = ["Agence Massengo", "Agence Kinsoudi", "Agence Mfilou"];
 const serviceTypes = new Set([
   "Billet d’avion",
   "Assurance automobile",
@@ -49,6 +54,7 @@ const staticFiles = new Map([
   ["/app.js", ["app.js", "text/javascript; charset=utf-8"]],
   ["/assets/money-express-logo.jpg", ["logo.jpg", "image/jpeg"]],
 ]);
+const uploadMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
 function requiredEnvironment(name) {
   const value = process.env[name]?.trim();
@@ -106,6 +112,54 @@ function readJson(request) {
       } catch {
         rejectBody(httpError(400, "Le format des données est invalide."));
       }
+    });
+    request.on("error", rejectBody);
+  });
+}
+
+function readMultipart(request) {
+  return new Promise((resolveBody, rejectBody) => {
+    const contentType = request.headers["content-type"] || "";
+    const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;\s]+))/);
+    if (!boundaryMatch) { rejectBody(httpError(400, "Boundary multipart manquant.")); return; }
+    const boundary = boundaryMatch[1] || boundaryMatch[2];
+    const chunks = [];
+    let bodySize = 0;
+    request.on("data", (chunk) => {
+      bodySize += chunk.length;
+      if (bodySize > 6 * 1024 * 1024) { rejectBody(httpError(413, "Le fichier est trop volumineux (max 5 Mo).")); return; }
+      chunks.push(chunk);
+    });
+    request.on("end", () => {
+      try {
+        const buffer = Buffer.concat(chunks);
+        const parts = {};
+        const boundaryBuffer = Buffer.from(`--${boundary}`);
+        let pos = 0;
+        while (pos < buffer.length) {
+          const start = buffer.indexOf(boundaryBuffer, pos);
+          if (start === -1) break;
+          const nextStart = buffer.indexOf(boundaryBuffer, start + boundaryBuffer.length);
+          if (nextStart === -1) break;
+          const partData = buffer.subarray(start + boundaryBuffer.length, nextStart);
+          const headerEnd = partData.indexOf("\r\n\r\n");
+          if (headerEnd === -1) { pos = nextStart; continue; }
+          const headers = partData.subarray(0, headerEnd).toString();
+          const body = partData.subarray(headerEnd + 4, partData.length - 2);
+          const nameMatch = headers.match(/name="([^"]+)"/);
+          const filenameMatch = headers.match(/filename="([^"]+)"/);
+          const ctMatch = headers.match(/Content-Type:\s*(.+)/i);
+          if (nameMatch) {
+            if (filenameMatch) {
+              parts[nameMatch[1]] = { filename: filenameMatch[1], contentType: ctMatch ? ctMatch[1].trim() : "application/octet-stream", data: body };
+            } else {
+              parts[nameMatch[1]] = body.toString();
+            }
+          }
+          pos = nextStart;
+        }
+        resolveBody(parts);
+      } catch { rejectBody(httpError(400, "Erreur de lecture du formulaire.")); }
     });
     request.on("error", rejectBody);
   });
@@ -288,17 +342,44 @@ async function start() {
       service TEXT NOT NULL,
       details TEXT NOT NULL DEFAULT '',
       name TEXT NOT NULL DEFAULT '',
-      phone TEXT NOT NULL,
+      phone TEXT NOT NULL DEFAULT '',
       amount INTEGER,
       currency TEXT,
       recipient TEXT,
+      country TEXT DEFAULT '',
+      wu_operation TEXT DEFAULT '',
+      send_type TEXT DEFAULT '',
+      mtcn TEXT DEFAULT '',
+      agency TEXT DEFAULT '',
+      id_document TEXT DEFAULT '',
       status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'rejected', 'prepared')),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS requests_user_created ON requests(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS requests_created ON requests(created_at DESC);
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      request_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS notifications_user ON notifications(user_id, is_read, created_at DESC);
   `);
+
+  /* Migration: add new columns if missing (existing DBs) */
+  const existingCols = database.prepare("PRAGMA table_info(requests)").all().map(c => c.name);
+  const migrations = [
+    ["country", "TEXT DEFAULT ''"], ["wu_operation", "TEXT DEFAULT ''"],
+    ["send_type", "TEXT DEFAULT ''"], ["mtcn", "TEXT DEFAULT ''"],
+    ["agency", "TEXT DEFAULT ''"], ["id_document", "TEXT DEFAULT ''"],
+  ];
+  for (const [col, def] of migrations) {
+    if (!existingCols.includes(col)) database.exec(`ALTER TABLE requests ADD COLUMN ${col} ${def}`);
+  }
+  try { database.exec("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, request_id TEXT NOT NULL, message TEXT NOT NULL, is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)"); } catch {}
 
   const existingAdmin = database.prepare("SELECT id, role FROM users WHERE email = ?").get(adminEmail);
   if (existingAdmin && existingAdmin.role !== "admin") {
@@ -351,10 +432,16 @@ async function start() {
       amount: row.amount,
       currency: row.currency,
       recipient: row.recipient,
+      country: row.country || "",
+      wuOperation: row.wu_operation || "",
+      sendType: row.send_type || "",
+      mtcn: row.mtcn || "",
+      agency: row.agency || "",
+      idDocument: row.id_document || "",
       status: row.status,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      ...(row.email ? { email: row.email, name: row.user_name } : {}),
+      ...(row.email ? { email: row.email, userName: row.user_name, name: row.user_name || row.name } : {}),
     };
   }
 
@@ -467,25 +554,85 @@ async function start() {
     if (pathname === "/api/requests" && request.method === "POST") {
       const user = requireUser(request);
       if (user.role !== "client") throw httpError(403, "Seuls les comptes client peuvent soumettre une demande.");
-      const body = await readJson(request);
-      const kind = body.kind === "transfer" ? "transfer" : body.kind === "request" ? "request" : "";
+
+      const isMultipart = (request.headers["content-type"] || "").includes("multipart/form-data");
+      const body = isMultipart ? await readMultipart(request) : await readJson(request);
+
+      const kind = (typeof body.kind === "string" ? body.kind : "") === "transfer" ? "transfer" : (typeof body.kind === "string" ? body.kind : "") === "request" ? "request" : "";
       const service = typeof body.service === "string" ? body.service : "";
       const phone = typeof body.phone === "string" ? body.phone.trim() : "";
       const name = typeof body.name === "string" ? body.name.trim() : "";
       const details = typeof body.details === "string" ? body.details.trim() : "";
       const recipient = typeof body.recipient === "string" ? body.recipient.trim() : "";
-      const amount = Number(body.amount);
+      const amount = Number(body.amount || 0);
       const currency = typeof body.currency === "string" ? body.currency : "";
+      const country = typeof body.country === "string" ? body.country.trim() : "";
+      const wuOperation = typeof body.wu_operation === "string" ? body.wu_operation : "";
+      const sendType = typeof body.send_type === "string" ? body.send_type : "";
+      const mtcn = typeof body.mtcn === "string" ? body.mtcn.trim() : "";
+      const agency = typeof body.agency === "string" ? body.agency : "";
+
       const supportedService = kind === "transfer" ? transferServices.has(service) : serviceTypes.has(service);
-      if (!kind || !supportedService || phone.length < 5 || phone.length > 32) {
-        throw httpError(400, "Vérifiez le type de demande, le service choisi et le numéro de téléphone.");
+
+      /* Western Union special flow */
+      if (service === "Western Union" && kind === "transfer") {
+        if (!wuOperations.has(wuOperation)) throw httpError(400, "Choisissez envoi ou retrait.");
+        if (!agencies.includes(agency)) throw httpError(400, "Veuillez choisir une agence.");
+
+        let idDocumentFilename = "";
+        if (wuOperation === "envoi") {
+          if (recipient.length < 2 || recipient.length > 100) throw httpError(400, "Renseignez le nom du bénéficiaire.");
+          if (country.length < 2 || country.length > 100) throw httpError(400, "Renseignez le pays du bénéficiaire.");
+          if (!Number.isSafeInteger(amount) || amount < 1) throw httpError(400, "Renseignez un montant valide.");
+          if (!new Set(["FCFA", "EUR", "USD"]).has(currency)) throw httpError(400, "Choisissez une devise.");
+          if (!wuSendTypes.has(sendType)) throw httpError(400, "Choisissez le type d'envoi.");
+          /* File upload */
+          const idFile = body.id_document;
+          if (idFile && typeof idFile === "object" && idFile.data) {
+            if (!uploadMimeTypes.has(idFile.contentType)) throw httpError(400, "Format de pièce d'identité non supporté (JPG, PNG, WebP ou PDF).");
+            if (idFile.data.length > 5 * 1024 * 1024) throw httpError(400, "Le fichier dépasse 5 Mo.");
+            const ext = idFile.contentType === "application/pdf" ? ".pdf" : idFile.contentType === "image/png" ? ".png" : idFile.contentType === "image/webp" ? ".webp" : ".jpg";
+            idDocumentFilename = `${randomBytes(16).toString("hex")}${ext}`;
+            writeFileSync(resolve(uploadsPath, idDocumentFilename), idFile.data);
+          }
+        } else {
+          /* retrait */
+          if (mtcn.length < 4 || mtcn.length > 30) throw httpError(400, "Renseignez le MTCN.");
+          if (recipient.length < 2 || recipient.length > 100) throw httpError(400, "Renseignez le nom du bénéficiaire.");
+        }
+
+        const now = new Date().toISOString();
+        const id = `WU-${randomUUID().toUpperCase()}`;
+        database.prepare(`
+          INSERT INTO requests (id, user_id, kind, service, details, name, phone, amount, currency, recipient, country, wu_operation, send_type, mtcn, agency, id_document, status, created_at, updated_at)
+          VALUES (?, ?, 'transfer', 'Western Union', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+        `).run(
+          id, user.id, details, name, phone,
+          wuOperation === "envoi" ? amount : null,
+          wuOperation === "envoi" ? currency : null,
+          recipient, country, wuOperation, sendType, mtcn, agency, idDocumentFilename,
+          now, now,
+        );
+        database.prepare("INSERT INTO notifications (user_id, request_id, message, created_at) VALUES (?, ?, ?, ?)").run(user.id, id, `Votre demande ${id} (Western Union ${wuOperation === "envoi" ? "Envoi" : "Retrait"}) a bien été envoyée.`, now);
+        const created = database.prepare("SELECT * FROM requests WHERE id = ?").get(id);
+        sendJson(response, 201, { request: formatRequest(created) });
+        return;
+      }
+
+      /* Original flow for other services */
+      if (!kind || !supportedService) {
+        throw httpError(400, "Vérifiez le type de demande et le service choisi.");
       }
       if (kind === "request" && (name.length < 2 || name.length > 100 || details.length > 1000)) {
         throw httpError(400, "Vérifiez votre nom et limitez les précisions à 1 000 caractères.");
       }
+      if (kind === "request" && phone.length < 5 || phone.length > 32) {
+        throw httpError(400, "Vérifiez le numéro de téléphone.");
+      }
       if (kind === "transfer" && (
         !Number.isSafeInteger(amount) || amount < 1 || amount > 1_000_000_000_000
         || !new Set(["FCFA", "EUR", "USD"]).has(currency) || recipient.length < 2 || recipient.length > 100
+        || phone.length < 5 || phone.length > 32
       )) {
         throw httpError(400, "Vérifiez le montant, la devise et le nom du bénéficiaire.");
       }
@@ -502,8 +649,21 @@ async function start() {
         kind === "transfer" ? "prepared" : "pending",
         now, now,
       );
+      database.prepare("INSERT INTO notifications (user_id, request_id, message, created_at) VALUES (?, ?, ?, ?)").run(user.id, id, `Votre demande ${id} (${kind === "transfer" ? "Transfert" : "Demande"} ${service}) a bien été envoyée.`, now);
       const created = database.prepare("SELECT * FROM requests WHERE id = ?").get(id);
       sendJson(response, 201, { request: formatRequest(created) });
+      return;
+    }
+
+    /* GET single request detail (client sees own, admin sees any) */
+    const detailMatch = pathname.match(/^\/api\/requests\/([A-Za-z0-9-]+)$/);
+    if (detailMatch && request.method === "GET") {
+      const user = requireUser(request);
+      const row = user.role === "admin"
+        ? database.prepare("SELECT requests.*, users.email, users.name AS user_name FROM requests JOIN users ON users.id = requests.user_id WHERE requests.id = ?").get(detailMatch[1])
+        : database.prepare("SELECT requests.*, users.email, users.name AS user_name FROM requests JOIN users ON users.id = requests.user_id WHERE requests.id = ? AND requests.user_id = ?").get(detailMatch[1], user.id);
+      if (!row) throw httpError(404, "Demande introuvable.");
+      sendJson(response, 200, { request: formatRequest(row) });
       return;
     }
 
@@ -518,7 +678,60 @@ async function start() {
       const updated = database.prepare(
         "SELECT requests.*, users.email, users.name AS user_name FROM requests JOIN users ON users.id = requests.user_id WHERE requests.id = ?",
       ).get(statusMatch[1]);
+
+      /* Notification client suite au traitement */
+      const statusLabels = { pending: "En attente", prepared: "Préparé", processing: "En traitement", completed: "Terminé", rejected: "Refusé" };
+      const label = statusLabels[body.status] || body.status;
+      try {
+        database.prepare("INSERT INTO notifications (user_id, request_id, message, created_at) VALUES (?, ?, ?, ?)")
+          .run(updated.user_id, updated.id, `Votre demande ${statusMatch[1]} a été traitée. Statut actuel : ${label}.`, new Date().toISOString());
+      } catch (err) {
+        console.error("Erreur insertion notification:", err);
+      }
+
       sendJson(response, 200, { request: formatRequest(updated) });
+      return;
+    }
+
+    /* Notifications API */
+    if (pathname === "/api/notifications" && request.method === "GET") {
+      const user = requireUser(request);
+      const rows = database.prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50").all(user.id);
+      const unread = database.prepare("SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0").get(user.id);
+      sendJson(response, 200, {
+        notifications: rows.map(n => ({ id: n.id, requestId: n.request_id, message: n.message, isRead: !!n.is_read, createdAt: n.created_at })),
+        unreadCount: unread ? unread.count : 0,
+      });
+      return;
+    }
+    if (pathname === "/api/notifications/read" && request.method === "POST") {
+      const user = requireUser(request);
+      database.prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0").run(user.id);
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    /* File upload serving (Admin ou propriétaire de la demande) */
+    const uploadMatch = pathname.match(/^\/api\/uploads\/([a-f0-9]+\.[a-z]+)$/);
+    if (uploadMatch && request.method === "GET") {
+      const user = requireUser(request);
+      const filename = uploadMatch[1];
+      if (user.role !== "admin") {
+        const ownerRow = database.prepare("SELECT id FROM requests WHERE user_id = ? AND id_document = ?").get(user.id, filename);
+        if (!ownerRow) throw httpError(403, "Accès refusé au document demandé.");
+      }
+      const filePath = resolve(uploadsPath, filename);
+      if (!existsSync(filePath)) throw httpError(404, "Fichier introuvable.");
+      const data = readFileSync(filePath);
+      const ext = filename.split(".").pop();
+      const mimeMap = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", pdf: "application/pdf" };
+      response.writeHead(200, {
+        "Content-Type": mimeMap[ext] || "application/octet-stream",
+        "Content-Length": data.length,
+        "Content-Disposition": `inline; filename="${filename}"`,
+        "Cache-Control": "private, max-age=3600",
+      });
+      response.end(data);
       return;
     }
 

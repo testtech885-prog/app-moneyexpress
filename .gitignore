@@ -1,4 +1,5 @@
 .env
 data/
 dist/
-dist/
+uploads/
+.vscode/
