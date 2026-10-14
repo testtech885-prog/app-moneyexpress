@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Guide d'utilisation - Money Express Mobile</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 15mm 20mm 15mm;
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #1e293b;
+      line-height: 1.6;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+      font-size: 13px;
+    }
+    .header {
+      border-bottom: 2px solid #059669;
+      padding-bottom: 15px;
+      margin-bottom: 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      font-size: 26px;
+      font-weight: 800;
+      color: #064e3b;
+      letter-spacing: -0.5px;
+    }
+    .brand span {
+      color: #059669;
+    }
+    .doc-badge {
+      background: #ecfdf5;
+      color: #047857;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 12px;
+      border: 1px solid #a7f3d0;
+    }
+    h1 {
+      font-size: 22px;
+      color: #0f172a;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 16px;
+      color: #047857;
+      border-left: 4px solid #059669;
+      padding-left: 10px;
+      margin-top: 25px;
+      margin-bottom: 12px;
+    }
+    h3 {
+      font-size: 14px;
+      color: #1e293b;
+      margin-top: 15px;
+      margin-bottom: 6px;
+    }
+    p {
+      margin: 6px 0;
+    }
+    ul, ol {
+      margin: 6px 0 12px 20px;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-wu {
+      background: #fef08a;
+      color: #854d0e;
+    }
+    .badge-admin {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .badge-client {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 12px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 600;
+    }
+    .tip-box {
+      background: #f0fdf4;
+      border-left: 4px solid #10b981;
+      padding: 10px 14px;
+      margin: 14px 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .footer {
+      margin-top: 35px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+      font-size: 11px;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand">money<span>express</span></div>
+    <div class="doc-badge">Guide Utilisateur & Administrateur v1.0</div>
+  </div>
+
+  <h1>Manuel d'Utilisation de l'Application Money Express Mobile</h1>
+  <p>Money Express Mobile est une plateforme web sécurisée conçue pour faciliter vos opérations financières, demandes de services et transferts d'argent (Western Union, Mobile Money, Airtel Money, Express Union, etc.).</p>
+
+  <h2>1. Connexion & Création de Compte</h2>
+  <div class="card">
+    <p><strong>Accès à l'application :</strong> <a href="https://delicate-panda-64c849.netlify.app">https://delicate-panda-64c849.netlify.app</a></p>
+    <ul>
+      <li><strong>Nouveau client :</strong> Cliquez sur <em>« Créer un compte client »</em>, saisissez votre nom complet, adresse e-mail et un mot de passe sécurisé (12 caractères minimum).</li>
+      <li><strong>Connexion :</strong> Saisissez votre adresse e-mail et votre mot de passe pour accéder à votre espace personnel.</li>
+      <li><strong>Sécurité :</strong> Les sessions sont protégées et chiffrées. Vous pouvez modifier votre mot de passe à tout moment depuis le bouton <em>« Mot de passe »</em> en haut à droite.</li>
+    </ul>
+  </div>
+
+  <h2>2. Le Service Western Union (Envoi & Retrait)</h2>
+  <p>Le service Western Union a été optimisé pour vous permettre de préparer et transmettre vos opérations directement en ligne :</p>
+
+  <div class="card">
+    <h3>A. Envoi d'argent Western Union <span class="badge badge-wu">Envoi</span></h3>
+    <ol>
+      <li>Sur le tableau de bord, sélectionnez la carte <strong>Western Union</strong> ou cliquez sur <strong>« Préparer un transfert »</strong>.</li>
+      <li>Basculez sur l'onglet <strong>« Envoi d'argent »</strong>.</li>
+      <li>Renseignez les champs requis :
+        <ul>
+          <li><strong>Nom complet du bénéficiaire</strong> (tel qu'inscrit sur sa pièce d'identité).</li>
+          <li><strong>Pays du bénéficiaire</strong> (ex. France, Cameroun, Sénégal, etc.).</li>
+          <li><strong>Montant & Devise</strong> (FCFA, EUR ou USD).</li>
+          <li><strong>Type d'envoi :</strong> <em>Envoi normal (Cash to Cash)</em> ou <em>Direct to Bank (Vers compte bancaire)</em>.</li>
+          <li><strong>Agence de prise en charge :</strong> Agence Massengo, Agence Kinsoudi ou Agence Mfilou.</li>
+          <li><strong>Pièce d'identité de l'expéditeur :</strong> Téléversez votre CNI ou passeport (Image JPG, PNG ou fichier PDF, max 5 Mo).</li>
+        </ul>
+      </li>
+      <li>Cliquez sur <strong>« Enregistrer ma demande »</strong>.</li>
+    </ol>
+
+    <h3>B. Retrait d'argent Western Union <span class="badge badge-wu">Retrait</span></h3>
+    <ol>
+      <li>Sélectionnez <strong>Western Union</strong> puis l'onglet <strong>« Retrait d'argent »</strong>.</li>
+      <li>Renseignez :
+        <ul>
+          <li><strong>Numéro de transfert (MTCN) :</strong> Le code à 10 chiffres communiqué par l'expéditeur.</li>
+          <li><strong>Nom du bénéficiaire :</strong> Votre nom complet.</li>
+          <li><strong>Agence de retrait souhaitée :</strong> Choisissez votre point de service.</li>
+        </ul>
+      </li>
+      <li>Validez pour transmettre votre dossier à l'équipe.</li>
+    </ol>
+  </div>
+
+  <h2>3. Système de Notifications en Temps Réel</h2>
+  <div class="tip-box">
+    <p><strong>Suivi automatique :</strong></p>
+    <ul>
+      <li>Dès la soumission de votre demande, vous recevez une confirmation immédiate : <em>« Votre demande #ID a bien été envoyée. »</em></li>
+      <li>Lorsque l'administrateur traite votre dossier en agence, une notification vous informe du nouveau statut (<em>En traitement</em>, <em>Terminé</em> ou <em>Refusé</em>).</li>
+      <li>Une <strong>cloche</strong> avec indicateur numérique rouge est visible en haut à droite. En cliquant dessus, vous accédez à l'historique et pouvez marquer les alertes comme lues.</li>
+    </ul>
+  </div>
+
+  <h2>4. Détails et Suivi de vos Demandes</h2>
+  <p>Dans la section <strong>« Mes demandes »</strong> de votre tableau de bord :</p>
+  <ul>
+    <li>Chaque opération affiche un bouton <strong>« Détails & Suivi »</strong>.</li>
+    <li>Une <strong>timeline visuelle</strong> indique l'avancement en 3 étapes :
+      <br><em>1. Demande transmise &rarr; 2. En traitement agence &rarr; 3. Traitée & Validée</em>.</li>
+    <li>Le récapitulatif complet des données (bénéficiaire, montant, agence, document fourni) y est consultable à tout moment.</li>
+  </ul>
+
+  <h2>5. Espace Administrateur (Gestion & Traitement)</h2>
+  <div class="card">
+    <p><span class="badge badge-admin">Accès Équipe</span> L'administrateur dispose d'outils dédiés pour traiter les demandes :</p>
+    <ul>
+      <li><strong>Vue globale :</strong> Liste centralisée de toutes les demandes clients enregistrées avec les identités des demandeurs.</li>
+      <li><strong>Contrôle des pièces jointes :</strong> Visualisation et téléchargement direct et sécurisé des pièces d'identité (CNI / Passeports).</li>
+      <li><strong>Traitement du statut :</strong> Possibilité de faire évoluer le statut (<em>En attente</em> &rarr; <em>En traitement</em> &rarr; <em>Terminé / Refusé</em>) depuis la liste ou dans la fiche détaillée. Cette action notifie automatiquement le client.</li>
+    </ul>
+  </div>
+
+  <h2>6. Nos Points de Service</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>N°</th>
+        <th>Agence</th>
+        <th>Adresse</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>01</td>
+        <td><strong>Agence Massengo</strong></td>
+        <td>02, rue Moutala marché Massengo</td>
+      </tr>
+      <tr>
+        <td>02</td>
+        <td><strong>Agence Kinsoudi</strong></td>
+        <td>18, rue Ngangouoni Château d'eau Kinsoudi</td>
+      </tr>
+      <tr>
+        <td>03</td>
+        <td><strong>Agence Mfilou</strong></td>
+        <td>72, avenue Ngamaba Mfilou</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>Money Express Mobile — Votre allié le plus fidèle.</span>
+    <span>Document d'information officiel</span>
+  </div>
+
+</body>
+</html>
