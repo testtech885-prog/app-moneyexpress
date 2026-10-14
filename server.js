@@ -53,6 +53,7 @@ const staticFiles = new Map([
   ["/branding.css", ["branding.css", "text/css; charset=utf-8"]],
   ["/app.js", ["app.js", "text/javascript; charset=utf-8"]],
   ["/assets/money-express-logo.jpg", ["logo.jpg", "image/jpeg"]],
+  ["/favicon.ico", ["logo.jpg", "image/jpeg"]],
 ]);
 const uploadMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 

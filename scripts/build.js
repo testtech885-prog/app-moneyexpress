@@ -40,6 +40,10 @@ copyFileSync(
   logoSource,
   resolve(assets, "money-express-logo.jpg"),
 );
+copyFileSync(
+  logoSource,
+  resolve(dist, "favicon.ico"),
+);
 
 writeFileSync(resolve(dist, "_redirects"), [
   "/api/* https://app-moneyexpress-1.onrender.com/api/:splat 200!",
